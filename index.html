@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SwapSpot</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f2f2f2; }
+    #app { max-width: 800px; margin: auto; padding: 20px; }
+    header { background: #4CAF50; color: white; padding: 10px 20px; text-align: center; }
+    nav { margin: 20px 0; display: flex; gap: 10px; }
+    nav button { padding: 10px; cursor:pointer; border:none; background:#eee; border-radius:5px; }
+    nav button.active { background:#4CAF50; color:white; }
+    section { background:white; padding:20px; border-radius:10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
+    input, button { padding:10px; margin:5px 0; width:100%; border-radius:5px; border:1px solid #ccc; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+
+  <div id="app">
+    <header>
+      <h1>SwapSpot</h1>
+    </header>
+
+    <div id="view-container">
+      <!-- Views will be rendered here dynamically -->
+    </div>
+  </div>
+
+  <script>
+    /********** Simple SPA Logic **********/
+    const appContainer = document.getElementById('view-container');
+
+    // Mock user session
+    let currentUser = null;
+
+    // Render login view
+    function renderLoginView() {
+      appContainer.innerHTML = `
+        <section>
+          <h2>Login with Phone OTP</h2>
+          <input type="tel" id="phone" placeholder="Enter phone number">
+          <button id="send-otp">Send OTP</button>
+          <div id="otp-section" class="hidden">
+            <input type="text" id="otp" placeholder="Enter OTP">
+            <button id="verify-otp">Verify OTP</button>
+          </div>
+        </section>
+      `;
+
+      document.getElementById('send-otp').onclick = () => {
+        const phone = document.getElementById('phone').value;
+        if(!phone) return alert('Enter phone number');
+        alert('OTP sent to ' + phone + ' (mock)');
+        document.getElementById('otp-section').classList.remove('hidden');
+      };
+
+      document.getElementById('verify-otp').onclick = () => {
+        const otp = document.getElementById('otp').value;
+        if(otp === '1234') { // mock OTP
+          currentUser = { phone: document.getElementById('phone').value, type: 'community' };
+          renderDashboardView();
+        } else {
+          alert('Invalid OTP (use 1234)');
+        }
+      };
+    }
+
+    // Render dashboard
+    function renderDashboardView() {
+      appContainer.innerHTML = `
+        <nav>
+          <button id="nav-swaps" class="active">Swap Board</button>
+          <button id="nav-voting">Voting</button>
+          <button id="nav-rewards">Rewards</button>
+          <button id="nav-profile">Profile</button>
+          <button id="nav-logout">Logout</button>
+        </nav>
+        <section id="main-view">
+          <!-- Dynamic content -->
+        </section>
+      `;
+
+      // Navigation buttons
+      document.getElementById('nav-swaps').onclick = () => { setActiveNav('nav-swaps'); renderSwapBoard(); };
+      document.getElementById('nav-voting').onclick = () => { setActiveNav('nav-voting'); renderVoting(); };
+      document.getElementById('nav-rewards').onclick = () => { setActiveNav('nav-rewards'); renderRewards(); };
+      document.getElementById('nav-profile').onclick = () => { setActiveNav('nav-profile'); renderProfile(); };
+      document.getElementById('nav-logout').onclick = () => { currentUser = null; renderLoginView(); };
+
+      renderSwapBoard(); // default
+    }
+
+    function setActiveNav(id) {
+      document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+
+    // Swap Board View
+    function renderSwapBoard() {
+      const main = document.getElementById('main-view');
+      main.innerHTML = `
+        <h2>Swap Board</h2>
+        <p>Browse & post local swaps.</p>
+        <input type="text" id="swap-title" placeholder="Swap title">
+        <input type="text" id="swap-desc" placeholder="Swap description">
+        <button id="post-swap">Post Swap</button>
+        <ul id="swap-list"></ul>
+      `;
+
+      const swaps = [];
+
+      document.getElementById('post-swap').onclick = () => {
+        const title = document.getElementById('swap-title').value;
+        const desc = document.getElementById('swap-desc').value;
+        if(!title || !desc) return alert('Enter title and description');
+        swaps.push({ title, desc });
+        renderSwapList();
+        document.getElementById('swap-title').value = '';
+        document.getElementById('swap-desc').value = '';
+      };
+
+      function renderSwapList() {
+        const list = document.getElementById('swap-list');
+        list.innerHTML = swaps.map(s => `<li><strong>${s.title}</strong>: ${s.desc}</li>`).join('');
+      }
+    }
+
+    // Voting View
+    function renderVoting() {
+      const main = document.getElementById('main-view');
+      const proposals = [
+        { id:1, text:'Should we add a weekend event?', votes:0 },
+        { id:2, text:'New swap categories?', votes:0 }
+      ];
+      main.innerHTML = `
+        <h2>Community Voting</h2>
+        <ul id="proposal-list">
+          ${proposals.map(p => `
+            <li>
+              ${p.text} - Votes: <span id="votes-${p.id}">${p.votes}</span>
+              <button onclick="vote(${p.id})">Vote</button>
+            </li>
+          `).join('')}
+        </ul>
+      `;
+
+      window.vote = function(id) {
+        const proposal = proposals.find(p => p.id === id);
+        proposal.votes++;
+        document.getElementById(`votes-${id}`).innerText = proposal.votes;
+      }
+    }
+
+    // Rewards View
+    function renderRewards() {
+      const main = document.getElementById('main-view');
+      main.innerHTML = `
+        <h2>Rewards</h2>
+        <p>Points: 100 (mock)</p>
+        <button>Redeem Reward</button>
+      `;
+    }
+
+    // Profile View
+    function renderProfile() {
+      const main = document.getElementById('main-view');
+      main.innerHTML = `
+        <h2>Profile</h2>
+        <p>Phone: ${currentUser.phone}</p>
+        <p>User Type: ${currentUser.type}</p>
+      `;
+    }
+
+    // Initialize app
+    renderLoginView();
+  </script>
+</body>
+</html>
